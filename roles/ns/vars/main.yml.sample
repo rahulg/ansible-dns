@@ -1,0 +1,9 @@
+---
+packages:
+  - bind
+  - bind-utils
+
+ns_zones:
+  - name: example.com
+    dynamic: false
+    dnssec: true

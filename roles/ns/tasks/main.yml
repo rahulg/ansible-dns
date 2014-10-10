@@ -1,0 +1,88 @@
+---
+- name: install packages
+  yum:
+    name={{ item }}
+    state=latest
+  with_items: packages
+  notify: restart named
+
+- name: copy named.conf
+  template:
+    src=named.conf
+    dest=/etc/named.conf
+    owner=root
+    group=named
+    mode=0640
+  notify: restart named
+
+- name: copy rndc.conf
+  copy:
+    src=rndc.conf
+    dest=/etc/rndc.conf
+    owner=root
+    group=named
+    mode=0644
+
+- name: copy keys
+  copy:
+    src={{ item }}
+    dest=/etc/named/
+    owner=root
+    group=named
+    mode=0640
+  with_fileglob: "*.key"
+  notify: restart named
+
+- name: '[masters] +static zones'
+  copy:
+    src={{ item.name }}.zone
+    dest=/var/named/
+    owner=root
+    group=named
+    mode=0640
+  with_items: ns_zones
+  when: "'dns_master' in group_names and not item.dynamic"
+  notify: reload named
+
+- name: '[slaves] -static zones'
+  file:
+    path=/var/named/{{ item.name }}.zone
+    state=absent
+  with_items: ns_zones
+  when: "'dns_master' not in group_names"
+
+- name: '[masters] +dynamic zones'
+  copy:
+    src=dynamic/{{ item.name }}.zone
+    dest=/var/named/dynamic/
+    owner=root
+    group=named
+    mode=0640
+  with_items: ns_zones
+  when: "'dns_master' in group_names and item.dynamic"
+  notify: reload named
+
+- name: '[slaves] -dynamic zones'
+  file:
+    path=/var/named/dynamic/{{ item.name }}.zone
+    state=absent
+  with_items: ns_zones
+  when: "'dns_master' not in group_names"
+
+- name: '[masters] +dnssec keys'
+  copy:
+    src={{ item }}
+    dest=/etc/named/
+    owner=root
+    group=named
+    mode=0640
+  with_fileglob: "dnssec-keys/*"
+  when: "'dns_master' in group_names"
+  notify: restart named
+
+- name: '[slaves] -dnssec keys'
+  file:
+    path=/etc/named/{{ item | basename }}
+    state=absent
+  with_fileglob: "dnssec-keys/*"
+  when: "'dns_master' not in group_names"

@@ -1,0 +1,9 @@
+options {
+	default-server localhost;
+	default-key "rndc-key";
+};
+
+key "rndc-key" {
+	algorithm HMAC-MD5;
+	secret "eHVmYXJvaGxhaHNoZWliYWV4ZWl3aXNvb2pvdWJhaHNob29qaWNob2FwZWF3b2JlaWRvaGppYwo=";
+};
