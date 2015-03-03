@@ -14,6 +14,9 @@
     group=named
     mode=0640
   notify: restart named
+  tags:
+    - config
+    - newzone
 
 - name: copy rndc.conf
   copy:
@@ -22,6 +25,8 @@
     owner=root
     group=named
     mode=0644
+  tags:
+    - config
 
 - name: copy keys
   copy:
@@ -32,6 +37,8 @@
     mode=0640
   with_fileglob: "*.key"
   notify: restart named
+  tags:
+    - config
 
 - name: '[masters] +static zones'
   copy:
@@ -43,6 +50,9 @@
   with_items: ns_zones
   when: "'dns_master' in group_names and not item.dynamic"
   notify: reload named
+  tags:
+    - newzone
+    - zone
 
 - name: '[slaves] -static zones'
   file:
@@ -50,6 +60,9 @@
     state=absent
   with_items: ns_zones
   when: "'dns_master' not in group_names"
+  tags:
+    - newzone
+    - zone
 
 - name: '[masters] +dynamic zones'
   copy:
@@ -61,6 +74,9 @@
   with_items: ns_zones
   when: "'dns_master' in group_names and item.dynamic"
   notify: reload named
+  tags:
+    - newzone
+    - zone
 
 - name: '[slaves] -dynamic zones'
   file:
@@ -68,6 +84,9 @@
     state=absent
   with_items: ns_zones
   when: "'dns_master' not in group_names"
+  tags:
+    - newzone
+    - zone
 
 - name: '[masters] +dnssec keys'
   copy:
@@ -79,6 +98,9 @@
   with_fileglob: "dnssec-keys/*"
   when: "'dns_master' in group_names"
   notify: restart named
+  tags:
+    - newzone
+    - zone
 
 - name: '[slaves] -dnssec keys'
   file:
@@ -86,3 +108,6 @@
     state=absent
   with_fileglob: "dnssec-keys/*"
   when: "'dns_master' not in group_names"
+  tags:
+    - newzone
+    - zone
